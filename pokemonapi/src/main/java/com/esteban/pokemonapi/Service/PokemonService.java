@@ -5,11 +5,12 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.esteban.pokemonapi.DTO.PokemonDTO;
+import com.esteban.pokemonapi.Exception.PokemonNotFoundException;
+import com.esteban.pokemonapi.Model.PokemonResponse;
 
 // Elementos del mapeo
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class PokemonService {
@@ -21,15 +22,8 @@ public class PokemonService {
         try {
             String url = "https://pokeapi.co/api/v2/pokemon/" + name;
             // Metodo que recibe los datos y hace el mapeo
-            Map<String, Object> response =
-                    restTemplate.getForObject(url, Map.class);
-            // Variables a usar para el mapeo
-            String pokemonName = (String) response.get("name"); // Nombre
-            int height = (int) response.get("height"); // Altura
-            int weight = (int) response.get("weight"); // Peso
-
-            List<Map<String, Object>> abilitiesRaw =
-                    (List<Map<String, Object>>) response.get("abilities"); // Abilidades
+            PokemonResponse response =
+                restTemplate.getForObject(url, PokemonResponse.class);
 
             List<String> abilities = new ArrayList<>(); // Array con los datos de las habilidades
             /**
@@ -38,17 +32,21 @@ public class PokemonService {
                 * Extrae el nombre y lo añade a la lista (Raw)
                 * Raw previamente definido
             */
-            for (Map<String, Object> abilityEntry : abilitiesRaw) {
-                Map<String, Object> ability =
-                        (Map<String, Object>) abilityEntry.get("ability");
-
-                abilities.add((String) ability.get("name"));
+            for (PokemonResponse.AbilityEntry entry : response.getAbilities()) {
+                abilities.add(entry.getAbility().getName());
             }
 
-            return new PokemonDTO(pokemonName, height, weight, abilities); // End Point
+            return new PokemonDTO(    // Tomamos los valores y los enviamos acorde al DTO
+                response.getName(), 
+                response.getHeight(),
+                response.getWeight(),
+                abilities
+            );
             // Nota: los valores deben coincidir con los del DTO (PokemonDTO.java)
         } catch (HttpClientErrorException.NotFound e) {
-            throw new RuntimeException("Pokemon no encontrado: " + name);
+            throw new PokemonNotFoundException(name);
+            // Cuando hay una exepción, Java busca una clase con ControllerAdvice.
+            // En este caso, solo está en GlobalExceptionHandler.
         }
     }
 }

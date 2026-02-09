@@ -14,15 +14,36 @@ public class PokemonResponse {
     private int weight;
     private List<AbilityEntry> abilities;
 
-    // Getters y Setters
+    // Getters 
 
-    public String getName() { return name; }
-    public int getHeight() { return height; }
-    public int getWeight() { return weight; }
-    public List<AbilityEntry> getAbilities() { return abilities; }
+    public String getName() { 
+        return name; 
+    }
+    public int getHeight() { 
+        return height; 
+    }
+    public int getWeight() { 
+        return weight; 
+    }
+    public List<AbilityEntry> getAbilities() { 
+        return abilities; 
+    }
 
-    public void setName(String name) { this.name = name; }
-    public void setHeight(int height) { this.height = height; }
-    public void setWeight(int weight) { this.weight = weight; }
-    public void setAbilities(List<AbilityEntry> abilities) { this.abilities = abilities; }
+    // Clases que permiten el uso de las habilidades
+    
+    public static class AbilityEntry {
+        private Ability ability;
+
+        public Ability getAbility() {
+            return ability;
+        }
+    }
+
+    public static class Ability {
+        private String name;
+
+        public String getName() {
+            return name;
+        }
+    }
 }

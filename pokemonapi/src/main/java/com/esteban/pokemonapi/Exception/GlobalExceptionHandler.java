@@ -1,5 +1,7 @@
 package com.esteban.pokemonapi.Exception;
 
+import java.time.LocalDateTime;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -16,11 +18,18 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class) 
     // Cuando ocurre una excepcion, Spring busca un metodo con ExceptionHandler
-    public ResponseEntity<String> handleRuntimeException(RuntimeException ex) {
+    public ResponseEntity<ErrorResponse> handleRuntimeException(PokemonNotFoundException ex) {
+
+        ErrorResponse error = new ErrorResponse(
+                ex.getMessage(),   // Capturamos el mensaje enviado desde el Service
+                404,  // Lo complementamos con un Estado 404: No encontrado
+                LocalDateTime.now()  // Añadimos la hora en que se produció el error
+        );
         // Con RuntimeException ex Spring inyecta la excepcion de forma automatica
+        // NOTA: No es necesario usar el ResponseEntity en el controller ya que aqui ya está
         return ResponseEntity // Define la respuesta HTTP
                 .status(404)
-                .body(ex.getMessage());
+                .body(error); // Expulsamos el cuerpo del ErrorResponse 
     }
 }
 
