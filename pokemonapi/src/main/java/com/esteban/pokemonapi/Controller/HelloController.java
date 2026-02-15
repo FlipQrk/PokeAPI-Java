@@ -3,6 +3,7 @@ package com.esteban.pokemonapi.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import com.esteban.pokemonapi.DTO.PokemonDTO;
+import com.esteban.pokemonapi.DTO.PokemonImageDTO;
 import com.esteban.pokemonapi.Service.PokemonService;
 
 @RestController
@@ -19,4 +20,10 @@ public class HelloController {
     public PokemonDTO getPokemon(@PathVariable String name) {
         return pokemonService.getPokemon(name);
     }
+
+    @GetMapping("/{name}/images")
+    public PokemonImageDTO getPokemonImages(@PathVariable String name) {
+        return pokemonService.getPokemonImages(name);
+    }
+
 }
