@@ -1,15 +1,19 @@
 package com.esteban.pokemonapi.Service;
 // Paquetes Spring Boot
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.reactive.function.client.WebClient;
+
 // Paquetes del mismo proyecto
 import com.esteban.pokemonapi.DTO.PokemonDTO;
 import com.esteban.pokemonapi.DTO.PokemonImageDTO;
 import com.esteban.pokemonapi.DTO.PokemonGenDTO;
 import com.esteban.pokemonapi.Model.PokemonResponse;
+
+import reactor.core.publisher.Mono;
+
 import com.esteban.pokemonapi.Model.PokemonImageResponse;
 import com.esteban.pokemonapi.Model.PokemonGenResponse;
 import com.esteban.pokemonapi.Exception.PokemonNotFoundException;
@@ -25,38 +29,41 @@ public class PokemonService {
         LoggerFactory.getLogger(PokemonService.class);
 
     private final RestTemplate restTemplate;
+    private final WebClient webClient;
 
-    public PokemonService(RestTemplate restTemplate) {
+    public PokemonService(RestTemplate restTemplate, WebClient webClient) {
         this.restTemplate = restTemplate;
+        this.webClient = webClient;
     }
     // Metodo que hace el llamado a la API
     public PokemonDTO getPokemon(String name) {
-        try {
-            String url = "https://pokeapi.co/api/v2/pokemon/" + name;
+        logger.info("Consultando Pokemon: {}", name); // Logger igual que antes
 
-            logger.info("Consultando Pokemon: {}", name); // Uso del Logger
-            // Metodo que recibe los datos y hace el mapeo
-            PokemonResponse response =
-                restTemplate.getForObject(url, PokemonResponse.class);
-
-            List<String> abilities = response.getAbilities()
-                .stream()
-                .map(a -> a.getAbility().getName())
-                .toList();
-
-            return new PokemonDTO(    // Tomamos los valores y los enviamos acorde al DTO
-                response.getName(), 
-                response.getHeight(),
-                response.getWeight(),
-                abilities
-            );
-            // Nota: los valores deben coincidir con los del DTO (PokemonDTO.java)
-        } catch (HttpClientErrorException.NotFound e) {
-            logger.error("Error consultando pokemon {}", name, e);
-            throw new PokemonNotFoundException("No se pudo obtener el pokemon:");
-            // Cuando hay una exepción, Java busca una clase con ControllerAdvice.
-            // En este caso, solo está en GlobalExceptionHandler.
-        }
+        return webClient.get()
+            .uri("/pokemon/" + name)
+            .retrieve()
+            // onStatus intercepta el estado HTTP de la respuesta
+            // Si es 4xx (ej: 404), lanza tu excepción personalizada
+            // Mono.error() es la forma reactiva de lanzar una excepción
+            .onStatus(status -> status.is4xxClientError(), response -> {
+                logger.error("Pokemon no encontrado: {}", name); // Logger del error
+                return Mono.error(new PokemonNotFoundException(name));
+                // Spring detecta que es RuntimeException y la manda al GlobalExceptionHandler
+            })
+            .bodyToMono(PokemonResponse.class)
+            .map(response -> {
+                List<String> abilities = response.getAbilities()
+                    .stream()
+                    .map(a -> a.getAbility().getName())
+                    .toList();
+                return new PokemonDTO(
+                    response.getName(),
+                    response.getHeight(),
+                    response.getWeight(),
+                    abilities
+                );
+            })
+            .block(); // Bloqueamos temporalmente para mantener la arquitectura actual
     }
 
     // ----------------------------------------------------------- //
