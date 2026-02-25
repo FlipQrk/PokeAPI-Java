@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.esteban.pokemonapi.DTO.PokemonDTO;
 import com.esteban.pokemonapi.DTO.PokemonImageDTO;
+import com.esteban.pokemonapi.DTO.PokemonGenDTO;
 import com.esteban.pokemonapi.Service.PokemonService;
 
 @RestController
@@ -16,14 +17,19 @@ public class HelloController {
         this.pokemonService = pokemonService;
     }
 
-    @GetMapping("/{name}")
+    @GetMapping("/{name}") // pokemon/pikachu
     public PokemonDTO getPokemon(@PathVariable String name) {
         return pokemonService.getPokemon(name);
     }
 
-    @GetMapping("/{name}/images")
+    @GetMapping("/{name}/images") // pokemon/pikachu/images
     public PokemonImageDTO getPokemonImages(@PathVariable String name) {
         return pokemonService.getPokemonImages(name);
+    }
+
+    @GetMapping("/gen/{gen}") // pokemon/gen/1
+    public PokemonGenDTO gPokemonGenDTO(@PathVariable int gen) {
+        return pokemonService.getPokemonGenDTO(gen);
     }
 
 }

@@ -8,9 +8,11 @@ import org.slf4j.LoggerFactory;
 // Paquetes del mismo proyecto
 import com.esteban.pokemonapi.DTO.PokemonDTO;
 import com.esteban.pokemonapi.DTO.PokemonImageDTO;
-import com.esteban.pokemonapi.Exception.PokemonNotFoundException;
+import com.esteban.pokemonapi.DTO.PokemonGenDTO;
 import com.esteban.pokemonapi.Model.PokemonResponse;
 import com.esteban.pokemonapi.Model.PokemonImageResponse;
+import com.esteban.pokemonapi.Model.PokemonGenResponse;
+import com.esteban.pokemonapi.Exception.PokemonNotFoundException;
 
 import java.util.ArrayList;
 // Elementos del mapeo
@@ -86,5 +88,25 @@ public class PokemonService {
         return new PokemonImageDTO(response.getName(), images);
     }
 
+    // ----------------------------------------------------------- //
 
+    // Metodo que trae todos los pokemons de una generación
+
+    public PokemonGenDTO getPokemonGenDTO(int gen) {
+
+    String url = "https://pokeapi.co/api/v2/generation/" + gen;
+
+        PokemonGenResponse response =
+            restTemplate.getForObject(url, PokemonGenResponse.class);
+
+        List<String> pokemon = response.getPokemon_species()
+                .stream()
+                .map(p -> p.getName())
+                .toList();
+
+        return new PokemonGenDTO(
+            response.getId(),  // int
+            pokemon            // List<String>
+        );
+    }
 }

@@ -12,9 +12,9 @@ Config - Para usar Bean ✅
 ------------------------------------------------------------
 METAS A CUMPLIR: 
 
-Traer imagenes de los Pokemons.   A CUMPLIR XD
+Traer imagenes de los Pokemons. Completo ✅
 
-Hacer filtros con la información.
+Hacer filtros con la información. Completo ✅
 
 Hacer validaciones.
 ------------------------------------------------------------
