@@ -13,3 +13,11 @@ public class WebClientConfig {
             .build();
     }
 }
+/**
+ * WebCLient es una configuración usada en Java Spring
+ * Sirve para hacer metodos reactivos
+ * Estos metodos reactivos ayudan a manejar las llamadas asincronas con un paradigma diferente
+ * No permite que una actividad se frene por otra que funcione
+ * Permite que las tareas puedan iniciarse sin esperar una respuesta del sistema
+ * El sistema maneja tareas de forma simulatena
+ */

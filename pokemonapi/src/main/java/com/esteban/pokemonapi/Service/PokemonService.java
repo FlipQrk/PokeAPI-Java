@@ -1,3 +1,5 @@
+// Importaciones
+
 package com.esteban.pokemonapi.Service;
 // Paquetes Spring Boot
 import org.springframework.stereotype.Service;
@@ -18,26 +20,33 @@ import com.esteban.pokemonapi.Model.PokemonImageResponse;
 import com.esteban.pokemonapi.Model.PokemonGenResponse;
 import com.esteban.pokemonapi.Exception.PokemonNotFoundException;
 
-import java.util.ArrayList;
 // Elementos del mapeo
+import java.util.ArrayList;
 import java.util.List;
 
+// ---------------------------------------------------------------------//
+
+// Constructor
 @Service
 public class PokemonService {
-
+    // Inyección del Logger para el manejo de errores
     private static final Logger logger =
         LoggerFactory.getLogger(PokemonService.class);
-
+    // Inicialización de las configuraciones
     private final RestTemplate restTemplate;
     private final WebClient webClient;
-
+    // Inyección de las configuraciones (RestTemplate, WebClient)
     public PokemonService(RestTemplate restTemplate, WebClient webClient) {
         this.restTemplate = restTemplate;
         this.webClient = webClient;
     }
+
+// ---------------------------------------------------------------------//
+
+
     // Metodo que hace el llamado a la API
     public PokemonDTO getPokemon(String name) {
-        logger.info("Consultando Pokemon: {}", name); // Logger igual que antes
+        logger.info("Consultando Pokemon: {}", name); // Logger 
 
         return webClient.get()
             .uri("/pokemon/" + name)
@@ -57,63 +66,88 @@ public class PokemonService {
                     .map(a -> a.getAbility().getName())
                     .toList();
                 return new PokemonDTO(
-                    response.getName(),
-                    response.getHeight(),
-                    response.getWeight(),
-                    abilities
+                    response.getName(),      // String Name
+                    response.getHeight(),    // int Height
+                    response.getWeight(),    // int Weight
+                    abilities                // List<String>
                 );
             })
             .block(); // Bloqueamos temporalmente para mantener la arquitectura actual
     }
 
-    // ----------------------------------------------------------- //
+// ----------------------------------------------------------- //
 
     // Metodo que hace el llamado a la Imagen del Pokemon
 
     public PokemonImageDTO getPokemonImages(String name) {
-        String url = "https://pokeapi.co/api/v2/pokemon/" + name;
+        // Iniciamos el método
+        logger.info("Buscando las imagénes del Pokemón {}", name);
 
-        PokemonImageResponse response =
-                restTemplate.getForObject(url, PokemonImageResponse.class);
+        // Llamado a la API
+        return webClient.get()
+            .uri("/pokemon/" + name) // URL
+            .retrieve()
+            // Manejo de Errores en el llamado
+            .onStatus(status -> status.is4xxClientError(), response -> {
+                logger.error("Imagenes no encontradas para: {}", name);
+                return Mono.error(new PokemonNotFoundException(name));
+            })
+            // Estructura de la respuesta para el usuario
+            .bodyToMono(PokemonImageResponse.class) // Llamamos el modelo de la respuesta
+            .map(response -> {   // Enviamos la respuesta al modelo ya mapeada
 
-        var sprites = response.getSprites();
+                var sprites = response.getSprites(); 
+                List<String> images = new ArrayList<>();
+                if (sprites.getFront_default() != null)
+                    images.add(sprites.getFront_default());
 
-        List<String> images = new ArrayList<>();
+                if (sprites.getBack_default() != null)
+                    images.add(sprites.getBack_default());
 
-        if (sprites.getFront_default() != null)
-            images.add(sprites.getFront_default());
+                if (sprites.getFront_shiny() != null)
+                    images.add(sprites.getFront_shiny());
 
-        if (sprites.getBack_default() != null)
-            images.add(sprites.getBack_default());
+                if (sprites.getBack_shiny() != null)
+                    images.add(sprites.getBack_shiny());
 
-        if (sprites.getFront_shiny() != null)
-            images.add(sprites.getFront_shiny());
-
-        if (sprites.getBack_shiny() != null)
-            images.add(sprites.getBack_shiny());
-
-        return new PokemonImageDTO(response.getName(), images);
+                return new PokemonImageDTO(
+                    response.getName(),  // String name
+                    images               // List<String>
+                );
+            })
+            .block();
     }
 
-    // ----------------------------------------------------------- //
+// ----------------------------------------------------------- //
 
     // Metodo que trae todos los pokemons de una generación
 
     public PokemonGenDTO getPokemonGenDTO(int gen) {
+        //Iniciamos el método
+        logger.info("Consultando Pokemons de la generación: {}", gen);
 
-    String url = "https://pokeapi.co/api/v2/generation/" + gen;
-
-        PokemonGenResponse response =
-            restTemplate.getForObject(url, PokemonGenResponse.class);
-
-        List<String> pokemon = response.getPokemon_species()
+        // Hacemos el llamado a la api
+        return webClient.get()
+            .uri("/generation/" + gen) // URL 
+            .retrieve()
+        // Manejo de Errores en el llamado
+        .onStatus(status -> status.is4xxClientError(), response -> {
+            logger.error("No se encontraron los pokemons de la generación: {}", gen);
+            return Mono.error(new PokemonNotFoundException(String.valueOf(gen)));
+        })
+        // Estructura de la respuesta de la API
+        .bodyToMono(PokemonGenResponse.class)  // Usamos el modelo realizado para la respuesta
+        .map(response -> {  // Enviamos la respuesta ya mapeada
+            List<String> pokemon = response.getPokemon_species()
                 .stream()
                 .map(p -> p.getName())
                 .toList();
 
-        return new PokemonGenDTO(
-            response.getId(),  // int
-            pokemon            // List<String>
-        );
+            return new PokemonGenDTO(
+                response.getId(), // int Gen
+                pokemon           // List<String> Pokemons
+            );
+        })
+        .block();
     }
 }
