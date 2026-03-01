@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.esteban.pokemonapi.DTO.PokemonDTO;
 import com.esteban.pokemonapi.DTO.PokemonImageDTO;
+import com.esteban.pokemonapi.DTO.PokemonTypeDTO;
 import com.esteban.pokemonapi.DTO.PokemonGenDTO;
 import com.esteban.pokemonapi.Service.PokemonService;
 
@@ -32,4 +33,8 @@ public class HelloController {
         return pokemonService.getPokemonGenDTO(gen);
     }
 
+    @GetMapping // pokemon?tipo=fire
+    public PokemonTypeDTO getPokemonByType(@RequestParam String tipo) {
+        return pokemonService.getPokemonByType(tipo);
+    }
 }

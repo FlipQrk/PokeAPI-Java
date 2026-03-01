@@ -11,8 +11,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 // Paquetes del mismo proyecto
 import com.esteban.pokemonapi.DTO.PokemonDTO;
 import com.esteban.pokemonapi.DTO.PokemonImageDTO;
+import com.esteban.pokemonapi.DTO.PokemonTypeDTO;
 import com.esteban.pokemonapi.DTO.PokemonGenDTO;
 import com.esteban.pokemonapi.Model.PokemonResponse;
+import com.esteban.pokemonapi.Model.PokemonTypeResponse;
 
 import reactor.core.publisher.Mono;
 
@@ -115,7 +117,7 @@ public class PokemonService {
                     images               // List<String>
                 );
             })
-            .block();
+            .block();   // Bloqueamos temporalmente para mantener la arquitectura actual
     }
 
 // ----------------------------------------------------------- //
@@ -148,6 +150,35 @@ public class PokemonService {
                 pokemon           // List<String> Pokemons
             );
         })
-        .block();
+        .block();   // Bloqueamos temporalmente para mantener la arquitectura actual
+    }
+
+
+// ----------------------------------------------------------- //
+
+    // Metodo que trae todos lo pokemons de un mismo tipo (Request Params)
+
+    public PokemonTypeDTO getPokemonByType(String tipo) {
+        // Iniciamos el método
+    logger.info("Consultando Pokémons de tipo: {}", tipo);
+
+    return webClient.get() // Hacemos la petición
+        .uri("/type/" + tipo) // Complementamos el enlace base (WebClientConfig)
+        .retrieve()
+        // Manejo de Errores y excepciones en la llamada con .onStatus
+        .onStatus(status -> status.is4xxClientError(), response -> {
+            logger.error("Tipo no encontrado: {}", tipo);       // Expulsada por Logger
+            return Mono.error(new PokemonNotFoundException(tipo));  // Expulsada por Exception
+        })
+        // Armamos la respuesta a enviar
+        .bodyToMono(PokemonTypeResponse.class) // Usamos el Model de la respuesta
+        .map(response -> {  // Preparamos la respuesta con .map()
+            List<String> pokemon = response.getPokemon()
+                .stream()
+                .map(entry -> entry.getPokemon().getName()) // Doble .get() por el anidamiento
+                .toList();
+            return new PokemonTypeDTO(response.getName(), pokemon); // Expulsamos la respuesta
+        })
+        .block();   // Bloqueamos temporalmente para mantener la arquitectura actual
     }
 }
