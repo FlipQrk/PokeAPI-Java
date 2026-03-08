@@ -35,11 +35,11 @@ public class PokemonService {
     private static final Logger logger =
         LoggerFactory.getLogger(PokemonService.class);
     // Inicialización de las configuraciones
-    private final RestTemplate restTemplate;
+        // private final RestTemplate restTemplate; // OPCIONAL, COMO COMENTARIO EL RESTTEMPLATE
     private final WebClient webClient;
     // Inyección de las configuraciones (RestTemplate, WebClient)
     public PokemonService(RestTemplate restTemplate, WebClient webClient) {
-        this.restTemplate = restTemplate;
+        // this.restTemplate = restTemplate; // OPCIONAL, COMO COMENTARIO EL RESTTEMPLATE
         this.webClient = webClient;
     }
 
@@ -124,12 +124,13 @@ public class PokemonService {
 
     // Metodo que trae todos los pokemons de una generación
 
-    public PokemonGenDTO getPokemonGenDTO(int gen) {
+    public PokemonGenDTO getPokemonGenDTO(int gen, String tipo) {
         //Iniciamos el método
         logger.info("Consultando Pokemons de la generación: {}", gen);
 
         // Hacemos el llamado a la api
-        return webClient.get()
+
+        List<String> pokemonGen = webClient.get() 
             .uri("/generation/" + gen) // URL 
             .retrieve()
         // Manejo de Errores en el llamado
@@ -139,18 +140,29 @@ public class PokemonService {
         })
         // Estructura de la respuesta de la API
         .bodyToMono(PokemonGenResponse.class)  // Usamos el modelo realizado para la respuesta
-        .map(response -> {  // Enviamos la respuesta ya mapeada
-            List<String> pokemon = response.getPokemon_species()
+        .map(response -> response.getPokemon_species()
                 .stream()
                 .map(p -> p.getName())
-                .toList();
+                .toList()            
+        )
+            .block();   // Bloqueamos temporalmente para mantener la arquitectura actual
 
-            return new PokemonGenDTO(
-                response.getId(), // int Gen
-                pokemon           // List<String> Pokemons
-            );
-        })
-        .block();   // Bloqueamos temporalmente para mantener la arquitectura actual
+
+        // Sin filtro, devolvemos la gen completa
+        if (tipo == null) {
+            logger.info("Sin filtro de tipo, devolviendo gen completa");
+            return new PokemonGenDTO(gen, pokemonGen);
+        }
+
+        // Con filtro, llamamos al método privado y cruzamos
+        List<String> pokemonTipo = fetchPokemonByType(tipo); // Reutilizamos el método privado
+        List<String> filtrados = pokemonGen
+            .stream()
+            .filter(p -> pokemonTipo.contains(p))
+            .toList();
+
+        logger.info("Pokémons encontrados tras filtrar: {}", filtrados.size());
+        return new PokemonGenDTO(gen, filtrados);
     }
 
 
@@ -181,4 +193,34 @@ public class PokemonService {
         })
         .block();   // Bloqueamos temporalmente para mantener la arquitectura actual
     }
+
+    // ----------------------------------------------------------- //
+    // ----------------------------------------------------------- //
+    // ----------------------------------------------------------- //
+
+        // METODO PRIVADO REUTILIZABLE DE LOS FILTROS
+
+        // Método privado reutilizable para cualquier endpoint que necesite filtrar por tipo
+    private List<String> fetchPokemonByType(String tipo) {
+        logger.info("Consultando pokémons de tipo: {}", tipo);
+        return webClient.get()
+            .uri("/type/" + tipo)
+            .retrieve()
+            .onStatus(status -> status.is4xxClientError(), response -> {
+                logger.error("Tipo no encontrado: {}", tipo);
+                return Mono.error(new PokemonNotFoundException(tipo));
+            })
+            .bodyToMono(PokemonTypeResponse.class)
+            .map(response -> response.getPokemon()
+                .stream()
+                .map(entry -> entry.getPokemon().getName())
+                .toList()
+            )
+            .block();
+    }
 }
+
+
+// ----------------------------------------------------------- //
+
+

@@ -29,8 +29,10 @@ public class HelloController {
     }
 
     @GetMapping("/gen/{gen}") // pokemon/gen/1
-    public PokemonGenDTO gPokemonGenDTO(@PathVariable int gen) {
-        return pokemonService.getPokemonGenDTO(gen);
+    public PokemonGenDTO gPokemonGenDTO(
+        @PathVariable int gen,
+        @RequestParam(required = false) String tipo ) { // Filtro opcional para filtro
+        return pokemonService.getPokemonGenDTO(gen, tipo);
     }
 
     @GetMapping // pokemon?tipo=fire
